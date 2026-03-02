@@ -32,7 +32,6 @@
     line-height: 1.5;
   }
 
-  /* ── Header ── */
   header {
     background: linear-gradient(135deg, #04090f 0%, #071828 100%);
     border-bottom: 1px solid var(--border);
@@ -43,257 +42,171 @@
     flex-wrap: wrap;
     gap: 12px;
   }
-
-  .header-title h1 {
-    font-size: 20px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: -0.3px;
-  }
+  .header-title h1 { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
   .header-title h1 span { color: var(--cyan); }
-  .header-title p {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .live-dot {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--cyan);
-  }
-  .dot {
-    width: 7px; height: 7px;
-    background: var(--cyan);
-    border-radius: 50%;
-    animation: blink 2s ease infinite;
-  }
+  .header-title p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  .live-dot { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cyan); }
+  .dot { width: 7px; height: 7px; background: var(--cyan); border-radius: 50%; animation: blink 2s ease infinite; }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+  .last-update { font-size: 11px; color: var(--muted); }
 
-  .last-update {
-    font-size: 11px; color: var(--muted);
-  }
-
-  /* ── Layout ── */
   .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
 
-  /* ── Status banner ── */
   .status-banner {
-    border-radius: 10px;
-    padding: 14px 20px;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
-    font-weight: 500;
-    border: 1px solid;
+    border-radius: 10px; padding: 14px 20px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 12px;
+    font-size: 14px; font-weight: 500; border: 1px solid;
   }
   .status-normal { background: #0a1f14; border-color: #14532d; color: var(--green); }
   .status-low    { background: #1a1008; border-color: #7c2d12; color: var(--orange); }
   .status-critical { background: #1a0808; border-color: #7f1d1d; color: var(--red); }
-  .status-icon { font-size: 20px; }
 
-  /* ── Stat cards ── */
-  .stats-grid {
+  /* ── Reservoir Cards ── */
+  .reservoirs-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
     margin-bottom: 24px;
   }
+  @media (max-width: 600px) { .reservoirs-grid { grid-template-columns: 1fr; } }
 
-  .stat-card {
+  .reservoir-card {
     background: var(--bg3);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 18px;
+    border-radius: 12px;
+    padding: 20px;
     position: relative;
     overflow: hidden;
   }
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
+  .reservoir-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
   }
-  .card-blue::before  { background: var(--blue); }
+  .card-powell::before { background: linear-gradient(90deg, var(--cyan), var(--blue)); }
+  .card-mead::before   { background: linear-gradient(90deg, var(--blue), var(--green)); }
+
+  .res-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .res-name { font-size: 15px; font-weight: 700; color: #fff; }
+  .res-tag {
+    font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .tag-upper { background: #0a1628; color: var(--cyan); border: 1px solid #1e3a5f; }
+  .tag-lower { background: #0a1f14; color: var(--green); border: 1px solid #14532d; }
+
+  .res-elev {
+    font-size: 34px; font-weight: 800; color: #fff; line-height: 1;
+    margin-bottom: 4px;
+  }
+  .res-elev span { font-size: 14px; color: var(--muted); font-weight: 400; }
+
+  .res-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+
+  /* Capacity bar */
+  .capacity-wrap { margin-bottom: 10px; }
+  .capacity-label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--muted); margin-bottom: 5px;
+  }
+  .capacity-bar-bg {
+    height: 8px; background: var(--bg4); border-radius: 4px; overflow: hidden;
+  }
+  .capacity-bar-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 0.8s ease;
+  }
+  .fill-powell { background: linear-gradient(90deg, #22d3ee, #3b82f6); }
+  .fill-mead   { background: linear-gradient(90deg, #3b82f6, #34d399); }
+  .fill-low    { background: linear-gradient(90deg, #fb923c, #f87171); }
+
+  .res-stats {
+    display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px;
+  }
+  .res-stat { font-size: 11px; color: var(--muted); }
+  .res-stat strong { color: var(--text); display: block; font-size: 13px; }
+
+  /* ── Small stat cards ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .stat-card::before { content:''; display:block; height:2px; margin-bottom:10px; border-radius:1px; }
   .card-cyan::before  { background: var(--cyan); }
+  .card-blue::before  { background: var(--blue); }
   .card-green::before { background: var(--green); }
   .card-gold::before  { background: var(--gold); }
   .card-orange::before { background: var(--orange); }
 
-  .card-label {
-    font-size: 11px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-bottom: 6px;
-  }
-  .card-value {
-    font-size: 26px;
-    font-weight: 700;
-    color: #fff;
-    line-height: 1;
-  }
-  .card-unit {
-    font-size: 13px;
-    color: var(--muted);
-    font-weight: 400;
-    margin-left: 4px;
-  }
-  .card-sub {
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 6px;
-  }
-  .card-trend {
-    font-size: 12px;
-    margin-top: 4px;
-  }
+  .card-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .card-value { font-size: 22px; font-weight: 700; color: #fff; line-height: 1; }
+  .card-unit  { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 3px; }
+  .card-sub   { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .card-trend { font-size: 12px; margin-top: 3px; }
   .trend-up   { color: var(--green); }
   .trend-down { color: var(--red); }
-  .trend-flat { color: var(--muted); }
 
-  /* ── Charts section ── */
+  /* ── Charts ── */
   .charts-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 24px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; margin-bottom: 24px;
   }
-  @media (max-width: 700px) {
-    .charts-grid { grid-template-columns: 1fr; }
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  }
+  @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
 
   .chart-card {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px;
   }
-  .chart-card h3 {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 4px;
-  }
-  .chart-card .chart-sub {
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 14px;
-  }
-  .chart-wrap { position: relative; height: 200px; }
+  .chart-card h3 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .chart-sub { font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+  .chart-wrap { position: relative; height: 180px; }
 
-  /* ── Gauge table ── */
+  /* ── Gauges ── */
   .gauges-card {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px;
-    margin-bottom: 24px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; margin-bottom: 24px;
   }
-  .gauges-card h3 {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .gauges-card h3 { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
 
   .gauge-row {
-    display: grid;
-    grid-template-columns: 1fr auto auto auto;
-    gap: 12px;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
+    display: grid; grid-template-columns: 1fr auto auto auto;
+    gap: 12px; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
   }
   .gauge-row:last-child { border-bottom: none; }
-
   .gauge-name { font-size: 13px; color: var(--text); }
-  .gauge-loc  { font-size: 11px; color: var(--muted); margin-top: 1px; }
-
-  .gauge-bar-wrap {
-    width: 120px;
-  }
-  .gauge-bar-bg {
-    height: 4px;
-    background: var(--bg4);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .gauge-bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    transition: width 0.5s ease;
-  }
-  .bar-blue   { background: var(--blue); }
-  .bar-cyan   { background: var(--cyan); }
-  .bar-green  { background: var(--green); }
-  .bar-gold   { background: var(--gold); }
-
-  .gauge-val {
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-    text-align: right;
-    white-space: nowrap;
-  }
+  .gauge-loc  { font-size: 11px; color: var(--muted); }
+  .gauge-bar-wrap { width: 100px; }
+  .gauge-bar-bg { height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden; }
+  .gauge-bar-fill { height: 100%; border-radius: 2px; }
+  .bar-blue  { background: var(--blue); }
+  .bar-cyan  { background: var(--cyan); }
+  .bar-green { background: var(--green); }
+  .bar-gold  { background: var(--gold); }
+  .gauge-val { font-size: 14px; font-weight: 600; color: #fff; text-align: right; white-space: nowrap; }
   .gauge-unit { font-size: 10px; color: var(--muted); }
-
   .gauge-link {
-    font-size: 11px;
-    color: var(--muted);
-    text-decoration: none;
-    padding: 3px 8px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    white-space: nowrap;
+    font-size: 11px; color: var(--muted); text-decoration: none;
+    padding: 3px 8px; border: 1px solid var(--border); border-radius: 4px;
   }
   .gauge-link:hover { border-color: var(--cyan); color: var(--cyan); }
 
-  /* ── Snowpack section ── */
-  .two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 24px;
-  }
+  /* ── Info ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
   @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
 
-  /* ── Footer ── */
   footer {
-    border-top: 1px solid var(--border);
-    padding: 16px 28px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-size: 11px;
-    color: var(--muted);
+    border-top: 1px solid var(--border); padding: 16px 28px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px; font-size: 11px; color: var(--muted);
   }
   footer a { color: var(--cyan); text-decoration: none; opacity: 0.7; }
   footer a:hover { opacity: 1; }
-
-  /* ── Skeleton loader ── */
-  .skel {
-    background: linear-gradient(90deg, var(--bg4) 25%, var(--bg3) 50%, var(--bg4) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 4px;
-  }
-  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-  .skel-text { height: 14px; width: 80px; display: inline-block; }
-  .skel-val  { height: 28px; width: 120px; display: inline-block; }
 </style>
 </head>
 <body>
@@ -301,7 +214,7 @@
 <header>
   <div class="header-title">
     <h1>🌊 Colorado River Basin <span>Water Dashboard</span></h1>
-    <p>Live streamflow · Snowpack · Reservoir outflows · USGS &amp; NRCS data</p>
+    <p>Lake Powell · Lake Mead · Streamflow gauges · Snowpack · USGS, USBR &amp; NRCS data</p>
   </div>
   <div class="header-right">
     <div class="live-dot"><div class="dot"></div> Live</div>
@@ -311,19 +224,67 @@
 
 <div class="container">
 
-  <!-- Status Banner -->
-  <div class="status-banner" id="status-banner">
-    <span class="status-icon">⏳</span>
+  <div class="status-banner status-normal" id="status-banner">
+    <span>⏳</span>
     <span id="status-text">Fetching river conditions…</span>
+  </div>
+
+  <!-- Reservoir Cards -->
+  <div class="reservoirs-grid">
+    <div class="reservoir-card card-powell">
+      <div class="res-header">
+        <div class="res-name">🏔 Lake Powell</div>
+        <div class="res-tag tag-upper">Upper Basin</div>
+      </div>
+      <div class="res-elev" id="powell-elev">— <span>ft</span></div>
+      <div class="res-sub" id="powell-sub">Glen Canyon Dam · Loading…</div>
+      <div class="capacity-wrap">
+        <div class="capacity-label">
+          <span>Capacity</span>
+          <span id="powell-pct">—%</span>
+        </div>
+        <div class="capacity-bar-bg">
+          <div class="capacity-bar-fill fill-powell" id="powell-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="res-stats">
+        <div class="res-stat"><strong>3,700 ft</strong>Full pool</div>
+        <div class="res-stat"><strong>3,490 ft</strong>Dead pool</div>
+        <div class="res-stat" id="powell-above"><strong>—</strong>Above dead pool</div>
+      </div>
+    </div>
+
+    <div class="reservoir-card card-mead">
+      <div class="res-header">
+        <div class="res-name">💧 Lake Mead</div>
+        <div class="res-tag tag-lower">Lower Basin</div>
+      </div>
+      <div class="res-elev" id="mead-elev">— <span>ft</span></div>
+      <div class="res-sub" id="mead-sub">Hoover Dam · Loading…</div>
+      <div class="capacity-wrap">
+        <div class="capacity-label">
+          <span>Capacity</span>
+          <span id="mead-pct">—%</span>
+        </div>
+        <div class="capacity-bar-bg">
+          <div class="capacity-bar-fill fill-mead" id="mead-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="res-stats">
+        <div class="res-stat"><strong>1,229 ft</strong>Full pool</div>
+        <div class="res-stat"><strong>895 ft</strong>Dead pool</div>
+        <div class="res-stat" id="mead-above"><strong>—</strong>Above dead pool</div>
+      </div>
+    </div>
   </div>
 
   <!-- Stat Cards -->
   <div class="stats-grid">
     <div class="stat-card card-cyan">
-      <div class="card-label">Powell Outflow (Lees Ferry)</div>
+      <div class="card-label">Powell Outflow — Lees Ferry</div>
       <div class="card-value" id="val-leesferry">—<span class="card-unit">cfs</span></div>
-      <div class="card-sub">USGS 09380000 · Key accounting point</div>
-      <div class="card-trend" id="trend-leesferry">—</div>
+      <div class="card-sub">USGS 09380000 · Accounting point</div>
+      <div class="card-trend" id="trend-leesferry"></div>
     </div>
     <div class="stat-card card-blue">
       <div class="card-label">Grand Canyon Flow</div>
@@ -338,42 +299,44 @@
     <div class="stat-card card-gold">
       <div class="card-label">Snowpack SWE — Grand Mesa</div>
       <div class="card-value" id="val-swe">—<span class="card-unit">in</span></div>
-      <div class="card-sub">NRCS SNOTEL 1040 · Snow water equivalent</div>
-      <div class="card-trend" id="trend-swe">—</div>
+      <div class="card-sub">NRCS SNOTEL 1040 · Snow water equiv.</div>
+      <div class="card-trend" id="trend-swe"></div>
     </div>
     <div class="stat-card card-orange">
       <div class="card-label">Headwaters (Cameo CO)</div>
       <div class="card-value" id="val-cameo">—<span class="card-unit">cfs</span></div>
-      <div class="card-sub">USGS 09095500 · Colorado at Grand Valley</div>
+      <div class="card-sub">USGS 09095500 · Grand Valley</div>
     </div>
   </div>
 
   <!-- Charts -->
   <div class="charts-grid">
     <div class="chart-card">
-      <h3>Streamflow at Lees Ferry — 30 Days</h3>
-      <div class="chart-sub">Lake Powell controlled outflow (cfs)</div>
-      <div class="chart-wrap">
-        <canvas id="chart-flow"></canvas>
-      </div>
+      <h3>Lake Powell Elevation — 30 Days</h3>
+      <div class="chart-sub">Reservoir water surface elevation (ft) · USBR HDB</div>
+      <div class="chart-wrap"><canvas id="chart-powell"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Lees Ferry Streamflow — 30 Days</h3>
+      <div class="chart-sub">Lake Powell controlled outflow (cfs) · USGS</div>
+      <div class="chart-wrap"><canvas id="chart-flow"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Lake Mead Elevation — 30 Days</h3>
+      <div class="chart-sub">Reservoir water surface elevation (ft) · USBR HDB</div>
+      <div class="chart-wrap"><canvas id="chart-mead"></canvas></div>
     </div>
     <div class="chart-card">
       <h3>Snowpack (SWE) — Grand Mesa CO</h3>
-      <div class="chart-sub">Snow water equivalent, inches (NRCS SNOTEL)</div>
-      <div class="chart-wrap">
-        <canvas id="chart-snow"></canvas>
-      </div>
+      <div class="chart-sub">Snow water equivalent, inches · NRCS SNOTEL</div>
+      <div class="chart-wrap"><canvas id="chart-snow"></canvas></div>
     </div>
   </div>
 
   <!-- All Gauges -->
   <div class="gauges-card">
     <h3>📍 Streamflow Gauges — Colorado River Mainstem</h3>
-    <div id="gauge-rows">
-      <div class="gauge-row">
-        <div><div class="gauge-name">Loading gauges…</div></div>
-      </div>
-    </div>
+    <div id="gauge-rows"><div class="gauge-row"><div><div class="gauge-name">Loading…</div></div></div></div>
   </div>
 
   <!-- Info -->
@@ -381,25 +344,23 @@
     <div class="chart-card">
       <h3>📋 About This Data</h3>
       <div class="chart-sub" style="margin-bottom:10px">Sources &amp; methodology</div>
-      <p style="font-size:12px;color:var(--muted);line-height:1.7">
-        <strong style="color:var(--text)">Streamflow</strong> data is real-time from USGS National Water Information System (NWIS), 
-        updated every 15–60 minutes. Values in cubic feet per second (cfs).<br><br>
-        <strong style="color:var(--text)">Snowpack</strong> is from NRCS SNOTEL network at Grand Mesa, CO (elev. 10,600 ft), 
-        updated daily. SWE = snow water equivalent in inches.<br><br>
-        <strong style="color:var(--text)">Lees Ferry, AZ</strong> is the legal accounting point separating the Upper and Lower 
-        Colorado River Basin under the 1922 Colorado River Compact.
+      <p style="font-size:12px;color:var(--muted);line-height:1.8">
+        <strong style="color:var(--text)">Reservoir levels</strong> (Lake Powell &amp; Mead) from USBR Hydrologic Database (HDB) — daily observations updated each morning.<br><br>
+        <strong style="color:var(--text)">Streamflow</strong> is real-time from USGS NWIS, updated every 15–60 min. Values in cubic feet per second (cfs).<br><br>
+        <strong style="color:var(--text)">Snowpack</strong> from NRCS SNOTEL at Grand Mesa, CO (10,600 ft), updated daily. SWE = snow water equivalent in inches.<br><br>
+        <strong style="color:var(--text)">Lees Ferry, AZ</strong> is the legal accounting point dividing the Upper and Lower Colorado Basin under the 1922 Colorado River Compact.
       </p>
     </div>
     <div class="chart-card">
-      <h3>🔗 Key Resources</h3>
-      <div class="chart-sub" style="margin-bottom:10px">Official data portals</div>
-      <p style="font-size:12px;line-height:2.2">
+      <h3>🔗 Official Resources</h3>
+      <div class="chart-sub" style="margin-bottom:10px">Data portals &amp; agencies</div>
+      <p style="font-size:12px;line-height:2.4">
         <a href="https://waterdata.usgs.gov/nwis/rt" target="_blank" style="color:var(--cyan)">↗ USGS National Water Dashboard</a><br>
         <a href="https://www.usbr.gov/uc/water/" target="_blank" style="color:var(--cyan)">↗ Bureau of Reclamation — Upper Colorado</a><br>
-        <a href="https://www.usbr.gov/lc/region/g4000/hourly/mead-elv.html" target="_blank" style="color:var(--cyan)">↗ Lake Mead Elevations (USBR)</a><br>
-        <a href="https://www.usbr.gov/uc/water/crsp/cs/gcd.html" target="_blank" style="color:var(--cyan)">↗ Glen Canyon Dam (Lake Powell)</a><br>
+        <a href="https://www.usbr.gov/lc/region/g4000/lakemead.html" target="_blank" style="color:var(--cyan)">↗ Lake Mead Water Operations (USBR)</a><br>
+        <a href="https://www.usbr.gov/uc/water/crsp/cs/gcd.html" target="_blank" style="color:var(--cyan)">↗ Glen Canyon Dam — Lake Powell (USBR)</a><br>
         <a href="https://wcc.sc.egov.usda.gov/reportGenerator/" target="_blank" style="color:var(--cyan)">↗ NRCS SNOTEL Report Generator</a><br>
-        <a href="https://droughtmonitor.unl.edu/CurrentMap/StateDroughtMonitor.aspx?West" target="_blank" style="color:var(--cyan)">↗ US Drought Monitor — West</a>
+        <a href="https://droughtmonitor.unl.edu/CurrentMap/StateDroughtMonitor.aspx?West" target="_blank" style="color:var(--cyan)">↗ US Drought Monitor — West Region</a>
       </p>
     </div>
   </div>
@@ -407,43 +368,37 @@
 </div>
 
 <footer>
-  <span>Data: USGS NWIS · NRCS SNOTEL · Auto-refreshes every 10 min</span>
+  <span>Data: USBR HDB · USGS NWIS · NRCS SNOTEL · Auto-refreshes every 10 min</span>
   <span>Built by <a href="https://x.com/unleashedBelial" target="_blank">@unleashedBelial</a> for <a href="https://www.owockibot.xyz/bounty" target="_blank">owockibot.xyz</a></span>
 </footer>
 
 <script>
-// ── Data Sources ──────────────────────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────────────────────────
+const PROXY = url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+
 const GAUGES = [
-  { id: '09095500', name: 'Colorado R. at Grand Valley', loc: 'Cameo, CO', key: 'cameo', color: 'gold' },
-  { id: '09163500', name: 'Colorado R. near Cisco',       loc: 'Cisco, UT',  key: 'cisco', color: 'green' },
-  { id: '09380000', name: 'Colorado R. at Lees Ferry',    loc: 'AZ (below Powell)', key: 'leesferry', color: 'cyan' },
-  { id: '09402500', name: 'Colorado R. near Grand Canyon', loc: 'Grand Canyon, AZ', key: 'grandcanyon', color: 'blue' },
-  { id: '09421500', name: 'Colorado R. below Hoover Dam',  loc: 'NV (below Mead)',  key: 'hoover', color: 'blue' },
+  { id: '09095500', name: 'Colorado R. at Grand Valley', loc: 'Cameo, CO',           key: 'cameo',       color: 'gold',  max: 8000  },
+  { id: '09163500', name: 'Colorado R. near Cisco',      loc: 'Cisco, UT',            key: 'cisco',       color: 'green', max: 10000 },
+  { id: '09380000', name: 'Colorado R. at Lees Ferry',   loc: 'AZ — below Powell',    key: 'leesferry',   color: 'cyan',  max: 20000 },
+  { id: '09402500', name: 'Colorado R. near Grand Canyon',loc: 'Grand Canyon, AZ',    key: 'grandcanyon', color: 'blue',  max: 25000 },
+  { id: '09421500', name: 'Colorado R. below Hoover Dam', loc: 'NV — below Mead',     key: 'hoover',      color: 'blue',  max: 30000 },
 ];
 
-const USGS_IV  = 'https://waterservices.usgs.gov/nwis/iv/?format=json&parameterCd=00060&siteStatus=all&sites=';
-const USGS_DV  = 'https://waterservices.usgs.gov/nwis/dv/?format=json&parameterCd=00060&period=P30D&sites=';
-const SNOTEL_CURRENT = 'https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/0,0/WTEQ::value?fitToScreen=false';
-const SNOTEL_HIST    = 'https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/-30,0/WTEQ::value?fitToScreen=false';
-
-const MAX_FLOWS = { cameo: 8000, cisco: 10000, leesferry: 20000, grandcanyon: 25000, hoover: 30000 };
-
-let flowChart, snowChart;
+// Reservoir constants
+const POWELL = { full: 3700, dead: 3490, sdi: 1928, svr: 'uchdb2' };
+const MEAD   = { full: 1229, dead: 895,  sdi: 1930, svr: 'lchdb'  };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-async function fetchJSON(url) {
-  const r = await fetch(url);
-  return r.json();
-}
-
-async function fetchText(url) {
-  const r = await fetch(url);
-  return r.text();
-}
-
 function numFmt(n) {
-  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  if (Math.abs(n) >= 1000) return (n/1000).toFixed(1) + 'K';
   return Math.round(n).toLocaleString();
+}
+
+function hdbUrl(svr, sdi, days=30) {
+  const ed = new Date();
+  const sd = new Date(ed - days * 86400000);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+  return `https://www.usbr.gov/pn-bin/hdb/hdb.pl?svr=${svr}&sdi=${sdi}&tstp=DY&t1=${fmt(sd)}&t2=${fmt(ed)}&table=R&mrid=0&format=json`;
 }
 
 function parseCSV(text) {
@@ -453,189 +408,215 @@ function parseCSV(text) {
     .filter(r => !isNaN(r.val));
 }
 
-function setStatus(flow) {
+function setStatus(powell, mead) {
   const el = document.getElementById('status-banner');
   const txt = document.getElementById('status-text');
-  if (flow > 10000) {
+  const pPct = powell ? ((powell - POWELL.dead) / (POWELL.full - POWELL.dead) * 100) : null;
+  const mPct = mead   ? ((mead   - MEAD.dead)   / (MEAD.full   - MEAD.dead)   * 100) : null;
+  const minPct = Math.min(pPct ?? 100, mPct ?? 100);
+
+  if (minPct > 50) {
     el.className = 'status-banner status-normal';
-    txt.textContent = `🟢 River conditions normal — Lees Ferry flow at ${numFmt(flow)} cfs. Storage operations active.`;
-  } else if (flow > 5000) {
+    txt.textContent = `✅ Reservoirs above 50% capacity — Powell at ${pPct?.toFixed(1)}%, Mead at ${mPct?.toFixed(1)}%. System operating normally.`;
+  } else if (minPct > 30) {
     el.className = 'status-banner status-low';
-    txt.textContent = `🟡 Below-average flow — Lees Ferry at ${numFmt(flow)} cfs. Monitor reservoir levels closely.`;
+    txt.textContent = `⚠️ Below-average reservoir storage — Powell at ${pPct?.toFixed(1)}%, Mead at ${mPct?.toFixed(1)}%. Drought watch conditions.`;
   } else {
     el.className = 'status-banner status-critical';
-    txt.textContent = `🔴 Low flow conditions — Lees Ferry at ${numFmt(flow)} cfs. Drought risk elevated.`;
+    txt.textContent = `🔴 Critical reservoir levels — Powell at ${pPct?.toFixed(1)}%, Mead at ${mPct?.toFixed(1)}%. Shortage conditions active.`;
   }
 }
 
 // ── Charts ────────────────────────────────────────────────────────────────────
-function initCharts() {
-  const defaults = {
-    borderWidth: 2,
-    pointRadius: 0,
-    tension: 0.3,
-    fill: true,
-  };
-
-  const gridColor = '#132038';
-  const tickColor = '#3d5a78';
-
-  const sharedOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: {
-      backgroundColor: '#0a1628',
-      borderColor: '#132038',
-      borderWidth: 1,
-      titleColor: '#b8cce0',
-      bodyColor: '#22d3ee',
-    }},
-    scales: {
-      x: { grid: { color: gridColor }, ticks: { color: tickColor, maxTicksLimit: 6, font: { size: 10 } } },
-      y: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 10 } } },
+const chartDefaults = {
+  borderWidth: 2, pointRadius: 0, tension: 0.3, fill: true,
+};
+const chartOptions = (unit) => ({
+  responsive: true, maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: { backgroundColor: '#0a1628', borderColor: '#132038', borderWidth: 1,
+      titleColor: '#b8cce0', bodyColor: '#22d3ee',
+      callbacks: { label: ctx => `${ctx.parsed.y.toLocaleString()} ${unit}` }
     }
-  };
+  },
+  scales: {
+    x: { grid: { color: '#132038' }, ticks: { color: '#3d5a78', maxTicksLimit: 6, font: { size: 10 } } },
+    y: { grid: { color: '#132038' }, ticks: { color: '#3d5a78', font: { size: 10 } } },
+  }
+});
 
-  flowChart = new Chart(document.getElementById('chart-flow'), {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        ...defaults,
-        label: 'Flow (cfs)',
-        borderColor: '#22d3ee',
-        backgroundColor: 'rgba(34,211,238,0.06)',
-        data: [],
-      }]
-    },
-    options: { ...sharedOptions }
-  });
+const powellChart = new Chart(document.getElementById('chart-powell'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ ...chartDefaults, label: 'Elevation (ft)', borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.06)', data: [] }] },
+  options: chartOptions('ft')
+});
+const meadChart = new Chart(document.getElementById('chart-mead'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ ...chartDefaults, label: 'Elevation (ft)', borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.06)', data: [] }] },
+  options: chartOptions('ft')
+});
+const flowChart = new Chart(document.getElementById('chart-flow'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ ...chartDefaults, label: 'Flow (cfs)', borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.04)', data: [] }] },
+  options: chartOptions('cfs')
+});
+const snowChart = new Chart(document.getElementById('chart-snow'), {
+  type: 'line',
+  data: { labels: [], datasets: [{ ...chartDefaults, label: 'SWE (in)', borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.06)', data: [] }] },
+  options: chartOptions('in')
+});
 
-  snowChart = new Chart(document.getElementById('chart-snow'), {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        ...defaults,
-        label: 'SWE (in)',
-        borderColor: '#3b82f6',
-        backgroundColor: 'rgba(59,130,246,0.08)',
-        data: [],
-      }]
-    },
-    options: { ...sharedOptions }
-  });
+// ── Update reservoir card ─────────────────────────────────────────────────────
+function updateReservoir(id, res, elev) {
+  const pct = Math.max(0, (elev - res.dead) / (res.full - res.dead) * 100);
+  const above = (elev - res.dead).toFixed(2);
+  const fillClass = pct < 30 ? 'fill-low' : (id === 'powell' ? 'fill-powell' : 'fill-mead');
+
+  document.getElementById(`${id}-elev`).innerHTML = `${elev.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} <span>ft</span>`;
+  document.getElementById(`${id}-pct`).textContent  = pct.toFixed(1) + '%';
+  document.getElementById(`${id}-bar`).style.width  = Math.min(100, pct) + '%';
+  document.getElementById(`${id}-bar`).className    = `capacity-bar-fill ${fillClass}`;
+  document.getElementById(`${id}-above`).innerHTML  = `<strong>${above} ft</strong>Above dead pool`;
+
+  const sub = id === 'powell'
+    ? `Glen Canyon Dam · USBR HDB · as of yesterday`
+    : `Hoover Dam · USBR HDB · as of yesterday`;
+  document.getElementById(`${id}-sub`).textContent = sub;
 }
 
-// ── Fetch & Render ────────────────────────────────────────────────────────────
+// ── Main fetch ────────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    // 1. Current streamflow (all gauges)
+    // 1. Reservoir elevations (USBR HDB via proxy)
+    const [powellRes, meadRes] = await Promise.all([
+      fetch(PROXY(hdbUrl(POWELL.svr, POWELL.sdi, 35))).then(r => r.json()),
+      fetch(PROXY(hdbUrl(MEAD.svr,   MEAD.sdi,   35))).then(r => r.json()),
+    ]);
+
+    const powellData = powellRes.Series?.[0]?.Data?.filter(x => x.v) ?? [];
+    const meadData   = meadRes.Series?.[0]?.Data?.filter(x => x.v)   ?? [];
+
+    const powellLatest = powellData.length ? parseFloat(powellData[powellData.length-1].v) : null;
+    const meadLatest   = meadData.length   ? parseFloat(meadData[meadData.length-1].v)     : null;
+
+    if (powellLatest) updateReservoir('powell', POWELL, powellLatest);
+    if (meadLatest)   updateReservoir('mead',   MEAD,   meadLatest);
+    if (powellLatest || meadLatest) setStatus(powellLatest, meadLatest);
+
+    // Update Powell chart
+    if (powellData.length) {
+      const labels = powellData.slice(-30).map(d => d.t.slice(0,5).replace(' ',''));
+      const vals   = powellData.slice(-30).map(d => parseFloat(d.v));
+      powellChart.data.labels = labels;
+      powellChart.data.datasets[0].data = vals;
+      powellChart.update('none');
+    }
+    // Update Mead chart
+    if (meadData.length) {
+      const labels = meadData.slice(-30).map(d => d.t.slice(0,5).replace(' ',''));
+      const vals   = meadData.slice(-30).map(d => parseFloat(d.v));
+      meadChart.data.labels = labels;
+      meadChart.data.datasets[0].data = vals;
+      meadChart.update('none');
+    }
+
+    // 2. Streamflow (USGS)
     const siteIds = GAUGES.map(g => g.id).join(',');
-    const ivData = await fetchJSON(USGS_IV + siteIds);
+    const [ivData, dvData] = await Promise.all([
+      fetch(`https://waterservices.usgs.gov/nwis/iv/?format=json&parameterCd=00060&siteStatus=all&sites=${siteIds}`).then(r=>r.json()),
+      fetch(`https://waterservices.usgs.gov/nwis/dv/?format=json&parameterCd=00060&period=P30D&sites=09380000`).then(r=>r.json()),
+    ]);
+
     const flows = {};
     for (const ts of ivData.value.timeSeries) {
       const siteNo = ts.sourceInfo.siteCode[0].value;
       const vals = ts.values[0].value;
-      const last = vals[vals.length - 1];
+      const last = vals[vals.length-1];
       if (last) flows[siteNo] = { val: parseFloat(last.value), time: last.dateTime };
     }
 
-    // 2. 30-day daily flow at Lees Ferry
-    const dvData = await fetchJSON(USGS_DV + '09380000');
-    const flowHistory = dvData.value.timeSeries[0]?.values[0]?.value || [];
-    const flowLabels = flowHistory.map(v => v.dateTime.slice(5,10));
-    const flowVals   = flowHistory.map(v => parseFloat(v.value));
+    const flowHistory = dvData.value.timeSeries[0]?.values[0]?.value ?? [];
 
-    // 3. Snowpack current + history
-    const snowCurrent = parseCSV(await fetchText(SNOTEL_CURRENT));
-    const snowHistory = parseCSV(await fetchText(SNOTEL_HIST));
-
-    // ── Update stat cards ──
+    // Update stat cards
     const lf = flows['09380000']?.val;
     const gc = flows['09402500']?.val;
     const ci = flows['09163500']?.val;
     const ca = flows['09095500']?.val;
-    const swe = snowCurrent[snowCurrent.length - 1]?.val;
 
     if (lf !== undefined) {
       document.getElementById('val-leesferry').innerHTML = `${numFmt(lf)}<span class="card-unit">cfs</span>`;
-      setStatus(lf);
-      // trend vs 7 days ago
-      if (flowVals.length >= 8) {
-        const prev7 = flowVals[flowVals.length - 8];
-        const diff = lf - prev7;
-        const pct = ((diff / prev7) * 100).toFixed(1);
-        const cls = diff > 0 ? 'trend-up' : diff < 0 ? 'trend-down' : 'trend-flat';
-        const arrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
-        document.getElementById('trend-leesferry').innerHTML =
-          `<span class="${cls}">${arrow} ${Math.abs(pct)}% vs 7 days ago</span>`;
+      if (flowHistory.length >= 8) {
+        const prev = parseFloat(flowHistory[flowHistory.length-8]?.value);
+        const diff = lf - prev;
+        const pct = ((diff/prev)*100).toFixed(1);
+        const cls = diff > 0 ? 'trend-up' : 'trend-down';
+        document.getElementById('trend-leesferry').innerHTML = `<span class="${cls}">${diff>0?'↑':'↓'} ${Math.abs(pct)}% vs 7 days ago</span>`;
       }
     }
     if (gc !== undefined) document.getElementById('val-grandcanyon').innerHTML = `${numFmt(gc)}<span class="card-unit">cfs</span>`;
     if (ci !== undefined) document.getElementById('val-cisco').innerHTML = `${numFmt(ci)}<span class="card-unit">cfs</span>`;
     if (ca !== undefined) document.getElementById('val-cameo').innerHTML = `${numFmt(ca)}<span class="card-unit">cfs</span>`;
+
+    // Update flow chart
+    if (flowHistory.length) {
+      flowChart.data.labels = flowHistory.map(v => v.dateTime.slice(5,10));
+      flowChart.data.datasets[0].data = flowHistory.map(v => parseFloat(v.value));
+      flowChart.update('none');
+    }
+
+    // Update gauge rows
+    document.getElementById('gauge-rows').innerHTML = GAUGES.map(g => {
+      const f = flows[g.id];
+      if (!f) return '';
+      const pct = Math.min(100, (f.val / g.max) * 100);
+      const time = new Date(f.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      return `<div class="gauge-row">
+        <div><div class="gauge-name">${g.name}</div><div class="gauge-loc">${g.loc} · ${time}</div></div>
+        <div class="gauge-bar-wrap"><div class="gauge-bar-bg"><div class="gauge-bar-fill bar-${g.color}" style="width:${pct}%"></div></div></div>
+        <div class="gauge-val">${numFmt(f.val)} <span class="gauge-unit">cfs</span></div>
+        <a class="gauge-link" href="https://waterdata.usgs.gov/monitoring-location/${g.id}/" target="_blank">↗ USGS</a>
+      </div>`;
+    }).join('');
+
+    // 3. Snowpack (NRCS SNOTEL)
+    const [snowCur, snowHist] = await Promise.all([
+      fetch('https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/0,0/WTEQ::value?fitToScreen=false').then(r=>r.text()),
+      fetch('https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/-30,0/WTEQ::value?fitToScreen=false').then(r=>r.text()),
+    ]);
+
+    const snowCurrent = parseCSV(snowCur);
+    const snowHistory = parseCSV(snowHist);
+    const swe = snowCurrent[snowCurrent.length-1]?.val;
+
     if (swe !== undefined) {
       document.getElementById('val-swe').innerHTML = `${swe}<span class="card-unit">in</span>`;
-      const prev = snowHistory.length >= 8 ? snowHistory[snowHistory.length - 8]?.val : null;
-      if (prev) {
-        const diff = swe - prev;
-        const cls = diff > 0 ? 'trend-up' : diff < 0 ? 'trend-down' : 'trend-flat';
-        const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '→';
-        document.getElementById('trend-swe').innerHTML =
-          `<span class="${cls}">${arrow} ${Math.abs(diff).toFixed(1)} in vs 7 days ago</span>`;
+      if (snowHistory.length >= 8) {
+        const prev = snowHistory[snowHistory.length-8]?.val;
+        if (prev) {
+          const diff = swe - prev;
+          const cls = diff > 0 ? 'trend-up' : 'trend-down';
+          document.getElementById('trend-swe').innerHTML = `<span class="${cls}">${diff>0?'▲':'▼'} ${Math.abs(diff).toFixed(1)} in vs 7 days ago</span>`;
+        }
       }
     }
 
-    // ── Update gauge rows ──
-    const maxFlow = Math.max(...Object.values(flows).map(f => f.val), 1);
-    const gaugeHTML = GAUGES.map(g => {
-      const f = flows[g.id];
-      if (!f) return '';
-      const pct = Math.min(100, (f.val / MAX_FLOWS[g.key] || 0) * 100);
-      const timeStr = f.time ? new Date(f.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
-      return `
-        <div class="gauge-row">
-          <div>
-            <div class="gauge-name">${g.name}</div>
-            <div class="gauge-loc">${g.loc} · ${timeStr}</div>
-          </div>
-          <div class="gauge-bar-wrap">
-            <div class="gauge-bar-bg">
-              <div class="gauge-bar-fill bar-${g.color}" style="width:${pct}%"></div>
-            </div>
-          </div>
-          <div class="gauge-val">${numFmt(f.val)} <span class="gauge-unit">cfs</span></div>
-          <a class="gauge-link" href="https://waterdata.usgs.gov/monitoring-location/${g.id}/" target="_blank">↗ USGS</a>
-        </div>`;
-    }).join('');
-    document.getElementById('gauge-rows').innerHTML = gaugeHTML;
+    if (snowHistory.length) {
+      snowChart.data.labels = snowHistory.map(r => r.date.slice(5));
+      snowChart.data.datasets[0].data = snowHistory.map(r => r.val);
+      snowChart.update('none');
+    }
 
-    // ── Update charts ──
-    flowChart.data.labels = flowLabels;
-    flowChart.data.datasets[0].data = flowVals;
-    flowChart.update('none');
+    document.getElementById('last-update').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
-    const snowLabels = snowHistory.map(r => r.date.slice(5));
-    const snowVals   = snowHistory.map(r => r.val);
-    snowChart.data.labels = snowLabels;
-    snowChart.data.datasets[0].data = snowVals;
-    snowChart.update('none');
-
-    // ── Update timestamp ──
-    document.getElementById('last-update').textContent =
-      'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-
-  } catch (e) {
+  } catch(e) {
     console.error('Load error:', e);
-    document.getElementById('status-text').textContent = 'Error loading data — retrying…';
+    document.getElementById('status-text').textContent = 'Error loading — retrying in 10 min…';
   }
 }
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-initCharts();
 loadData();
-setInterval(loadData, 600000); // 10 min
+setInterval(loadData, 600000);
 </script>
 </body>
 </html>
