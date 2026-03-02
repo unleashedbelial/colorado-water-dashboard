@@ -374,7 +374,27 @@
 
 <script>
 // ── Config ────────────────────────────────────────────────────────────────────
-const PROXY = url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+const PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+];
+
+async function fetchProxy(rawUrl) {
+  for (const proxy of PROXIES) {
+    try {
+      const r = await fetch(proxy(rawUrl), { signal: AbortSignal.timeout(10000) });
+      if (r.ok) return r.json();
+    } catch(e) { /* try next */ }
+  }
+  throw new Error('All proxies failed for: ' + rawUrl);
+}
+
+async function safeFetch(url, json=true) {
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(12000) });
+    return json ? r.json() : r.text();
+  } catch(e) { return null; }
+}
 
 const GAUGES = [
   { id: '09095500', name: 'Colorado R. at Grand Valley', loc: 'Cameo, CO',           key: 'cameo',       color: 'gold',  max: 8000  },
@@ -487,131 +507,134 @@ function updateReservoir(id, res, elev) {
 
 // ── Main fetch ────────────────────────────────────────────────────────────────
 async function loadData() {
+  let anySuccess = false;
+
+  // 1. Reservoir elevations (USBR HDB via CORS proxy)
   try {
-    // 1. Reservoir elevations (USBR HDB via proxy)
     const [powellRes, meadRes] = await Promise.all([
-      fetch(PROXY(hdbUrl(POWELL.svr, POWELL.sdi, 35))).then(r => r.json()),
-      fetch(PROXY(hdbUrl(MEAD.svr,   MEAD.sdi,   35))).then(r => r.json()),
+      fetchProxy(hdbUrl(POWELL.svr, POWELL.sdi, 35)),
+      fetchProxy(hdbUrl(MEAD.svr,   MEAD.sdi,   35)),
     ]);
 
     const powellData = powellRes.Series?.[0]?.Data?.filter(x => x.v) ?? [];
     const meadData   = meadRes.Series?.[0]?.Data?.filter(x => x.v)   ?? [];
-
     const powellLatest = powellData.length ? parseFloat(powellData[powellData.length-1].v) : null;
     const meadLatest   = meadData.length   ? parseFloat(meadData[meadData.length-1].v)     : null;
 
     if (powellLatest) updateReservoir('powell', POWELL, powellLatest);
     if (meadLatest)   updateReservoir('mead',   MEAD,   meadLatest);
-    if (powellLatest || meadLatest) setStatus(powellLatest, meadLatest);
+    setStatus(powellLatest, meadLatest);
 
-    // Update Powell chart
     if (powellData.length) {
-      const labels = powellData.slice(-30).map(d => d.t.slice(0,5).replace(' ',''));
-      const vals   = powellData.slice(-30).map(d => parseFloat(d.v));
-      powellChart.data.labels = labels;
-      powellChart.data.datasets[0].data = vals;
+      powellChart.data.labels = powellData.slice(-30).map(d => d.t.slice(0,5));
+      powellChart.data.datasets[0].data = powellData.slice(-30).map(d => parseFloat(d.v));
       powellChart.update('none');
     }
-    // Update Mead chart
     if (meadData.length) {
-      const labels = meadData.slice(-30).map(d => d.t.slice(0,5).replace(' ',''));
-      const vals   = meadData.slice(-30).map(d => parseFloat(d.v));
-      meadChart.data.labels = labels;
-      meadChart.data.datasets[0].data = vals;
+      meadChart.data.labels = meadData.slice(-30).map(d => d.t.slice(0,5));
+      meadChart.data.datasets[0].data = meadData.slice(-30).map(d => parseFloat(d.v));
       meadChart.update('none');
     }
+    anySuccess = true;
+  } catch(e) { console.warn('Reservoir fetch failed:', e.message); }
 
-    // 2. Streamflow (USGS)
+  // 2. Streamflow (USGS — CORS-enabled, no proxy needed)
+  try {
     const siteIds = GAUGES.map(g => g.id).join(',');
-    const [ivData, dvData] = await Promise.all([
-      fetch(`https://waterservices.usgs.gov/nwis/iv/?format=json&parameterCd=00060&siteStatus=all&sites=${siteIds}`).then(r=>r.json()),
-      fetch(`https://waterservices.usgs.gov/nwis/dv/?format=json&parameterCd=00060&period=P30D&sites=09380000`).then(r=>r.json()),
-    ]);
+    const ivData = await safeFetch(`https://waterservices.usgs.gov/nwis/iv/?format=json&parameterCd=00060&siteStatus=all&sites=${siteIds}`);
+    const dvData = await safeFetch(`https://waterservices.usgs.gov/nwis/dv/?format=json&parameterCd=00060&period=P30D&sites=09380000`);
 
-    const flows = {};
-    for (const ts of ivData.value.timeSeries) {
-      const siteNo = ts.sourceInfo.siteCode[0].value;
-      const vals = ts.values[0].value;
-      const last = vals[vals.length-1];
-      if (last) flows[siteNo] = { val: parseFloat(last.value), time: last.dateTime };
-    }
-
-    const flowHistory = dvData.value.timeSeries[0]?.values[0]?.value ?? [];
-
-    // Update stat cards
-    const lf = flows['09380000']?.val;
-    const gc = flows['09402500']?.val;
-    const ci = flows['09163500']?.val;
-    const ca = flows['09095500']?.val;
-
-    if (lf !== undefined) {
-      document.getElementById('val-leesferry').innerHTML = `${numFmt(lf)}<span class="card-unit">cfs</span>`;
-      if (flowHistory.length >= 8) {
-        const prev = parseFloat(flowHistory[flowHistory.length-8]?.value);
-        const diff = lf - prev;
-        const pct = ((diff/prev)*100).toFixed(1);
-        const cls = diff > 0 ? 'trend-up' : 'trend-down';
-        document.getElementById('trend-leesferry').innerHTML = `<span class="${cls}">${diff>0?'↑':'↓'} ${Math.abs(pct)}% vs 7 days ago</span>`;
+    if (ivData) {
+      const flows = {};
+      for (const ts of ivData.value.timeSeries) {
+        const siteNo = ts.sourceInfo.siteCode[0].value;
+        const vals = ts.values[0].value;
+        const last = vals[vals.length-1];
+        if (last) flows[siteNo] = { val: parseFloat(last.value), time: last.dateTime };
       }
-    }
-    if (gc !== undefined) document.getElementById('val-grandcanyon').innerHTML = `${numFmt(gc)}<span class="card-unit">cfs</span>`;
-    if (ci !== undefined) document.getElementById('val-cisco').innerHTML = `${numFmt(ci)}<span class="card-unit">cfs</span>`;
-    if (ca !== undefined) document.getElementById('val-cameo').innerHTML = `${numFmt(ca)}<span class="card-unit">cfs</span>`;
 
-    // Update flow chart
-    if (flowHistory.length) {
-      flowChart.data.labels = flowHistory.map(v => v.dateTime.slice(5,10));
-      flowChart.data.datasets[0].data = flowHistory.map(v => parseFloat(v.value));
-      flowChart.update('none');
-    }
+      const lf = flows['09380000']?.val;
+      const gc = flows['09402500']?.val;
+      const ci = flows['09163500']?.val;
+      const ca = flows['09095500']?.val;
 
-    // Update gauge rows
-    document.getElementById('gauge-rows').innerHTML = GAUGES.map(g => {
-      const f = flows[g.id];
-      if (!f) return '';
-      const pct = Math.min(100, (f.val / g.max) * 100);
-      const time = new Date(f.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-      return `<div class="gauge-row">
-        <div><div class="gauge-name">${g.name}</div><div class="gauge-loc">${g.loc} · ${time}</div></div>
-        <div class="gauge-bar-wrap"><div class="gauge-bar-bg"><div class="gauge-bar-fill bar-${g.color}" style="width:${pct}%"></div></div></div>
-        <div class="gauge-val">${numFmt(f.val)} <span class="gauge-unit">cfs</span></div>
-        <a class="gauge-link" href="https://waterdata.usgs.gov/monitoring-location/${g.id}/" target="_blank">↗ USGS</a>
-      </div>`;
-    }).join('');
+      if (lf !== undefined) {
+        document.getElementById('val-leesferry').innerHTML = `${numFmt(lf)}<span class="card-unit">cfs</span>`;
+      }
+      if (gc !== undefined) document.getElementById('val-grandcanyon').innerHTML = `${numFmt(gc)}<span class="card-unit">cfs</span>`;
+      if (ci !== undefined) document.getElementById('val-cisco').innerHTML = `${numFmt(ci)}<span class="card-unit">cfs</span>`;
+      if (ca !== undefined) document.getElementById('val-cameo').innerHTML = `${numFmt(ca)}<span class="card-unit">cfs</span>`;
 
-    // 3. Snowpack (NRCS SNOTEL)
-    const [snowCur, snowHist] = await Promise.all([
-      fetch('https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/0,0/WTEQ::value?fitToScreen=false').then(r=>r.text()),
-      fetch('https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/-30,0/WTEQ::value?fitToScreen=false').then(r=>r.text()),
-    ]);
-
-    const snowCurrent = parseCSV(snowCur);
-    const snowHistory = parseCSV(snowHist);
-    const swe = snowCurrent[snowCurrent.length-1]?.val;
-
-    if (swe !== undefined) {
-      document.getElementById('val-swe').innerHTML = `${swe}<span class="card-unit">in</span>`;
-      if (snowHistory.length >= 8) {
-        const prev = snowHistory[snowHistory.length-8]?.val;
-        if (prev) {
-          const diff = swe - prev;
+      // Flow trend
+      if (dvData) {
+        const flowHistory = dvData.value.timeSeries[0]?.values[0]?.value ?? [];
+        if (lf !== undefined && flowHistory.length >= 8) {
+          const prev = parseFloat(flowHistory[flowHistory.length-8]?.value);
+          const diff = lf - prev;
+          const pct = ((diff/prev)*100).toFixed(1);
           const cls = diff > 0 ? 'trend-up' : 'trend-down';
-          document.getElementById('trend-swe').innerHTML = `<span class="${cls}">${diff>0?'▲':'▼'} ${Math.abs(diff).toFixed(1)} in vs 7 days ago</span>`;
+          document.getElementById('trend-leesferry').innerHTML = `<span class="${cls}">${diff>0?'↑':'↓'} ${Math.abs(pct)}% vs 7 days ago</span>`;
+        }
+        if (flowHistory.length) {
+          flowChart.data.labels = flowHistory.map(v => v.dateTime.slice(5,10));
+          flowChart.data.datasets[0].data = flowHistory.map(v => parseFloat(v.value));
+          flowChart.update('none');
         }
       }
+
+      // Gauge rows
+      document.getElementById('gauge-rows').innerHTML = GAUGES.map(g => {
+        const f = flows[g.id];
+        if (!f) return '';
+        const pct = Math.min(100, (f.val / g.max) * 100);
+        const time = new Date(f.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        return `<div class="gauge-row">
+          <div><div class="gauge-name">${g.name}</div><div class="gauge-loc">${g.loc} · ${time}</div></div>
+          <div class="gauge-bar-wrap"><div class="gauge-bar-bg"><div class="gauge-bar-fill bar-${g.color}" style="width:${pct}%"></div></div></div>
+          <div class="gauge-val">${numFmt(f.val)} <span class="gauge-unit">cfs</span></div>
+          <a class="gauge-link" href="https://waterdata.usgs.gov/monitoring-location/${g.id}/" target="_blank">↗ USGS</a>
+        </div>`;
+      }).join('');
+      anySuccess = true;
     }
+  } catch(e) { console.warn('Streamflow fetch failed:', e.message); }
 
-    if (snowHistory.length) {
-      snowChart.data.labels = snowHistory.map(r => r.date.slice(5));
-      snowChart.data.datasets[0].data = snowHistory.map(r => r.val);
-      snowChart.update('none');
+  // 3. Snowpack (NRCS SNOTEL — CORS-enabled)
+  try {
+    const [snowCurText, snowHistText] = await Promise.all([
+      safeFetch('https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/0,0/WTEQ::value?fitToScreen=false', false),
+      safeFetch('https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/-30,0/WTEQ::value?fitToScreen=false', false),
+    ]);
+
+    if (snowCurText) {
+      const snowCurrent = parseCSV(snowCurText);
+      const snowHistory = snowHistText ? parseCSV(snowHistText) : [];
+      const swe = snowCurrent[snowCurrent.length-1]?.val;
+
+      if (swe !== undefined) {
+        document.getElementById('val-swe').innerHTML = `${swe}<span class="card-unit">in</span>`;
+        if (snowHistory.length >= 8) {
+          const prev = snowHistory[snowHistory.length-8]?.val;
+          if (prev) {
+            const diff = swe - prev;
+            const cls = diff > 0 ? 'trend-up' : 'trend-down';
+            document.getElementById('trend-swe').innerHTML = `<span class="${cls}">${diff>0?'▲':'▼'} ${Math.abs(diff).toFixed(1)} in vs 7d</span>`;
+          }
+        }
+      }
+      if (snowHistory.length) {
+        snowChart.data.labels = snowHistory.map(r => r.date.slice(5));
+        snowChart.data.datasets[0].data = snowHistory.map(r => r.val);
+        snowChart.update('none');
+      }
+      anySuccess = true;
     }
+  } catch(e) { console.warn('Snowpack fetch failed:', e.message); }
 
-    document.getElementById('last-update').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-
-  } catch(e) {
-    console.error('Load error:', e);
-    document.getElementById('status-text').textContent = 'Error loading — retrying in 10 min…';
+  document.getElementById('last-update').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  if (!anySuccess) {
+    document.getElementById('status-banner').className = 'status-banner status-low';
+    document.getElementById('status-text').textContent = '⚠️ Data temporarily unavailable — retrying in 10 min';
   }
 }
 
