@@ -2,8 +2,9 @@ name: Update Reservoir Data
 
 on:
   schedule:
-    # Run daily at 14:00 UTC (USBR updates data each morning MST)
-    - cron: '0 14 * * *'
+    # Run twice daily: 08:00 UTC and 16:00 UTC
+    - cron: '0 8 * * *'
+    - cron: '0 16 * * *'
   workflow_dispatch: # also allow manual trigger
 
 jobs:
