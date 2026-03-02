@@ -509,33 +509,31 @@ function updateReservoir(id, res, elev) {
 async function loadData() {
   let anySuccess = false;
 
-  // 1. Reservoir elevations (USBR HDB via CORS proxy)
+  // 1. Reservoir elevations (pre-fetched JSON from USBR HDB)
   try {
-    const [powellRes, meadRes] = await Promise.all([
-      fetchProxy(hdbUrl(POWELL.svr, POWELL.sdi, 35)),
-      fetchProxy(hdbUrl(MEAD.svr,   MEAD.sdi,   35)),
-    ]);
+    const resData = await safeFetch('reservoir-data.json');
+    if (resData) {
+      const powellData = resData.powell ?? [];
+      const meadData   = resData.mead   ?? [];
+      const powellLatest = powellData.length ? powellData[powellData.length-1].v : null;
+      const meadLatest   = meadData.length   ? meadData[meadData.length-1].v     : null;
 
-    const powellData = powellRes.Series?.[0]?.Data?.filter(x => x.v) ?? [];
-    const meadData   = meadRes.Series?.[0]?.Data?.filter(x => x.v)   ?? [];
-    const powellLatest = powellData.length ? parseFloat(powellData[powellData.length-1].v) : null;
-    const meadLatest   = meadData.length   ? parseFloat(meadData[meadData.length-1].v)     : null;
+      if (powellLatest) updateReservoir('powell', POWELL, powellLatest);
+      if (meadLatest)   updateReservoir('mead',   MEAD,   meadLatest);
+      setStatus(powellLatest, meadLatest);
 
-    if (powellLatest) updateReservoir('powell', POWELL, powellLatest);
-    if (meadLatest)   updateReservoir('mead',   MEAD,   meadLatest);
-    setStatus(powellLatest, meadLatest);
-
-    if (powellData.length) {
-      powellChart.data.labels = powellData.slice(-30).map(d => d.t.slice(0,5));
-      powellChart.data.datasets[0].data = powellData.slice(-30).map(d => parseFloat(d.v));
-      powellChart.update('none');
+      if (powellData.length) {
+        powellChart.data.labels = powellData.slice(-30).map(d => d.d);
+        powellChart.data.datasets[0].data = powellData.slice(-30).map(d => d.v);
+        powellChart.update('none');
+      }
+      if (meadData.length) {
+        meadChart.data.labels = meadData.slice(-30).map(d => d.d);
+        meadChart.data.datasets[0].data = meadData.slice(-30).map(d => d.v);
+        meadChart.update('none');
+      }
+      anySuccess = true;
     }
-    if (meadData.length) {
-      meadChart.data.labels = meadData.slice(-30).map(d => d.t.slice(0,5));
-      meadChart.data.datasets[0].data = meadData.slice(-30).map(d => parseFloat(d.v));
-      meadChart.update('none');
-    }
-    anySuccess = true;
   } catch(e) { console.warn('Reservoir fetch failed:', e.message); }
 
   // 2. Streamflow (USGS — CORS-enabled, no proxy needed)
