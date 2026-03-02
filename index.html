@@ -373,6 +373,32 @@
 </footer>
 
 <script>
+// ── Cache (localStorage, 10 min TTL) ─────────────────────────────────────────
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+function cacheGet(key) {
+  try {
+    const raw = localStorage.getItem('wdash_' + key);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_TTL) return null;
+    return data;
+  } catch { return null; }
+}
+
+function cacheSet(key, data) {
+  try { localStorage.setItem('wdash_' + key, JSON.stringify({ ts: Date.now(), data })); }
+  catch {}
+}
+
+async function cachedFetch(key, url, json = true) {
+  const cached = cacheGet(key);
+  if (cached) return { data: cached, fromCache: true };
+  const fresh = await safeFetch(url, json);
+  if (fresh) cacheSet(key, fresh);
+  return { data: fresh, fromCache: false };
+}
+
 // ── Config ────────────────────────────────────────────────────────────────────
 const PROXIES = [
   url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -509,9 +535,9 @@ function updateReservoir(id, res, elev) {
 async function loadData() {
   let anySuccess = false;
 
-  // 1. Reservoir elevations (pre-fetched JSON from USBR HDB)
+  // 1. Reservoir elevations (pre-fetched JSON, cached 10 min)
   try {
-    const resData = await safeFetch('reservoir-data.json');
+    const { data: resData } = await cachedFetch('reservoirs', 'reservoir-data.json');
     if (resData) {
       const powellData = resData.powell ?? [];
       const meadData   = resData.mead   ?? [];
@@ -536,11 +562,13 @@ async function loadData() {
     }
   } catch(e) { console.warn('Reservoir fetch failed:', e.message); }
 
-  // 2. Streamflow (USGS — CORS-enabled, no proxy needed)
+  // 2. Streamflow (USGS — CORS-enabled, cached 10 min)
   try {
     const siteIds = GAUGES.map(g => g.id).join(',');
-    const ivData = await safeFetch(`https://waterservices.usgs.gov/nwis/iv/?format=json&parameterCd=00060&siteStatus=all&sites=${siteIds}`);
-    const dvData = await safeFetch(`https://waterservices.usgs.gov/nwis/dv/?format=json&parameterCd=00060&period=P30D&sites=09380000`);
+    const [{ data: ivData }, { data: dvData }] = await Promise.all([
+      cachedFetch('usgs_iv', `https://waterservices.usgs.gov/nwis/iv/?format=json&parameterCd=00060&siteStatus=all&sites=${siteIds}`),
+      cachedFetch('usgs_dv', `https://waterservices.usgs.gov/nwis/dv/?format=json&parameterCd=00060&period=P30D&sites=09380000`),
+    ]);
 
     if (ivData) {
       const flows = {};
@@ -597,11 +625,11 @@ async function loadData() {
     }
   } catch(e) { console.warn('Streamflow fetch failed:', e.message); }
 
-  // 3. Snowpack (NRCS SNOTEL — CORS-enabled)
+  // 3. Snowpack (NRCS SNOTEL — CORS-enabled, cached 10 min)
   try {
-    const [snowCurText, snowHistText] = await Promise.all([
-      safeFetch('https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/0,0/WTEQ::value?fitToScreen=false', false),
-      safeFetch('https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/-30,0/WTEQ::value?fitToScreen=false', false),
+    const [{ data: snowCurText }, { data: snowHistText }] = await Promise.all([
+      cachedFetch('snotel_cur', 'https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/0,0/WTEQ::value?fitToScreen=false', false),
+      cachedFetch('snotel_hist', 'https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/-30,0/WTEQ::value?fitToScreen=false', false),
     ]);
 
     if (snowCurText) {
@@ -629,7 +657,10 @@ async function loadData() {
     }
   } catch(e) { console.warn('Snowpack fetch failed:', e.message); }
 
-  document.getElementById('last-update').textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  const fromCache = cacheGet('usgs_iv') !== null;
+  document.getElementById('last-update').textContent =
+    (fromCache ? '⚡ Cached · ' : '✓ Live · ') +
+    new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
   if (!anySuccess) {
     document.getElementById('status-banner').className = 'status-banner status-low';
     document.getElementById('status-text').textContent = '⚠️ Data temporarily unavailable — retrying in 10 min';
