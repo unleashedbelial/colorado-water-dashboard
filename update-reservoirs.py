@@ -36,7 +36,11 @@ except Exception as e:
 
 outdir = os.path.dirname(os.path.abspath(__file__))
 path = os.path.join(outdir, "reservoir-data.json")
-with open(path, "w") as f:
-    json.dump(result, f)
 
-print(f"Powell: {len(result['powell'])} days | Mead: {len(result['mead'])} days | Saved to {path}")
+# Only write if we got at least some data (fallback to existing file on full failure)
+if result["powell"] or result["mead"]:
+    with open(path, "w") as f:
+        json.dump(result, f)
+    print(f"Powell: {len(result['powell'])} days | Mead: {len(result['mead'])} days | Saved to {path}")
+else:
+    print("No data fetched — keeping existing reservoir-data.json as fallback")
