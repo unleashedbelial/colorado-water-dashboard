@@ -2,8 +2,8 @@ name: Update Reservoir Data
 
 on:
   schedule:
-    # Run every hour
-    - cron: '0 * * * *'
+    # Run every 12 hours (06:00 and 18:00 UTC)
+    - cron: '0 6,18 * * *'
   workflow_dispatch: # also allow manual trigger
 
 permissions:

@@ -368,7 +368,7 @@
 </div>
 
 <footer>
-  <span>Data: USBR HDB · USGS NWIS · NRCS SNOTEL · Auto-refreshes every 10 min</span>
+  <span>Data: USBR HDB · USGS NWIS · NRCS SNOTEL · Updated every 12h</span>
   <span>Built by <a href="https://x.com/unleashedBelial" target="_blank">@unleashedBelial</a> for <a href="https://www.owockibot.xyz/bounty" target="_blank">owockibot.xyz</a></span>
 </footer>
 
@@ -531,144 +531,143 @@ function updateReservoir(id, res, elev) {
   document.getElementById(`${id}-sub`).textContent = sub;
 }
 
-// ── Main fetch ────────────────────────────────────────────────────────────────
+// ── Main load — everything from static reservoir-data.json ───────────────────
+const CACHE_TTL_JSON = 12 * 60 * 60 * 1000; // 12h (matches GitHub Actions cron)
+
 async function loadData() {
   let anySuccess = false;
 
-  // 1. Reservoir elevations (pre-fetched JSON, cached 10 min)
+  // Single fetch: reservoir-data.json (pre-built by GitHub Actions every 12h)
+  // localStorage cache key changes every 12h to match update cadence
+  const cacheKey = 'wdash_all_' + Math.floor(Date.now() / CACHE_TTL_JSON);
+  let data = null;
+
   try {
-    const { data: resData } = await cachedFetch('reservoirs', 'reservoir-data.json');
-    if (resData) {
-      const powellData = resData.powell ?? [];
-      const meadData   = resData.mead   ?? [];
-      const powellLatest = powellData.length ? powellData[powellData.length-1].v : null;
-      const meadLatest   = meadData.length   ? meadData[meadData.length-1].v     : null;
-
-      if (powellLatest) updateReservoir('powell', POWELL, powellLatest);
-      if (meadLatest)   updateReservoir('mead',   MEAD,   meadLatest);
-      setStatus(powellLatest, meadLatest);
-
-      if (powellData.length) {
-        powellChart.data.labels = powellData.slice(-30).map(d => d.d);
-        powellChart.data.datasets[0].data = powellData.slice(-30).map(d => d.v);
-        powellChart.update('none');
-      }
-      if (meadData.length) {
-        meadChart.data.labels = meadData.slice(-30).map(d => d.d);
-        meadChart.data.datasets[0].data = meadData.slice(-30).map(d => d.v);
-        meadChart.update('none');
-      }
-      anySuccess = true;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      data = JSON.parse(cached);
+    } else {
+      // Clear old cache keys
+      Object.keys(localStorage).filter(k => k.startsWith('wdash_')).forEach(k => localStorage.removeItem(k));
+      const r = await fetch(`reservoir-data.json?t=${Math.floor(Date.now() / (60*60*1000))}`);
+      data = await r.json();
+      localStorage.setItem(cacheKey, JSON.stringify(data));
     }
-  } catch(e) { console.warn('Reservoir fetch failed:', e.message); }
+  } catch(e) { console.warn('Failed to load reservoir-data.json:', e.message); }
 
-  // 2. Streamflow (USGS — CORS-enabled, cached 10 min)
+  if (!data) {
+    document.getElementById('status-banner').className = 'status-banner status-low';
+    document.getElementById('status-text').textContent = '⚠️ Data temporarily unavailable';
+    return;
+  }
+
+  // 1. Reservoir elevations
   try {
-    const siteIds = GAUGES.map(g => g.id).join(',');
-    const [{ data: ivData }, { data: dvData }] = await Promise.all([
-      cachedFetch('usgs_iv', `https://waterservices.usgs.gov/nwis/iv/?format=json&parameterCd=00060&siteStatus=all&sites=${siteIds}`),
-      cachedFetch('usgs_dv', `https://waterservices.usgs.gov/nwis/dv/?format=json&parameterCd=00060&period=P30D&sites=09380000`),
-    ]);
+    const powellData = data.powell ?? [];
+    const meadData   = data.mead   ?? [];
+    const powellLatest = powellData.length ? powellData[powellData.length-1].v : null;
+    const meadLatest   = meadData.length   ? meadData[meadData.length-1].v     : null;
 
-    if (ivData) {
-      const flows = {};
-      for (const ts of ivData.value.timeSeries) {
-        const siteNo = ts.sourceInfo.siteCode[0].value;
-        const vals = ts.values[0].value;
-        const last = vals[vals.length-1];
-        if (last) flows[siteNo] = { val: parseFloat(last.value), time: last.dateTime };
+    if (powellLatest) updateReservoir('powell', POWELL, powellLatest);
+    if (meadLatest)   updateReservoir('mead',   MEAD,   meadLatest);
+    setStatus(powellLatest, meadLatest);
+
+    if (powellData.length) {
+      powellChart.data.labels = powellData.slice(-30).map(d => d.d);
+      powellChart.data.datasets[0].data = powellData.slice(-30).map(d => d.v);
+      powellChart.update('none');
+    }
+    if (meadData.length) {
+      meadChart.data.labels = meadData.slice(-30).map(d => d.d);
+      meadChart.data.datasets[0].data = meadData.slice(-30).map(d => d.v);
+      meadChart.update('none');
+    }
+    anySuccess = true;
+  } catch(e) { console.warn('Reservoir render failed:', e.message); }
+
+  // 2. Streamflow from cached JSON
+  try {
+    const flows = data.usgs_iv ?? {};
+    const flow30d = data.usgs_30d ?? [];
+
+    const lf = flows['09380000']?.value;
+    const gc = flows['09402500']?.value;
+    const ci = flows['09163500']?.value;
+    const ca = flows['09095500']?.value;
+
+    if (lf != null) document.getElementById('val-leesferry').innerHTML = `${numFmt(lf)}<span class="card-unit">cfs</span>`;
+    if (gc != null) document.getElementById('val-grandcanyon').innerHTML = `${numFmt(gc)}<span class="card-unit">cfs</span>`;
+    if (ci != null) document.getElementById('val-cisco').innerHTML = `${numFmt(ci)}<span class="card-unit">cfs</span>`;
+    if (ca != null) document.getElementById('val-cameo').innerHTML = `${numFmt(ca)}<span class="card-unit">cfs</span>`;
+
+    // Flow trend (vs 7 days ago from 30d history)
+    if (lf != null && flow30d.length >= 8) {
+      const prev = flow30d[flow30d.length - 8]?.v;
+      if (prev) {
+        const diff = lf - prev;
+        const pct = ((diff/prev)*100).toFixed(1);
+        const cls = diff > 0 ? 'trend-up' : 'trend-down';
+        document.getElementById('trend-leesferry').innerHTML = `<span class="${cls}">${diff>0?'↑':'↓'} ${Math.abs(pct)}% vs 7 days ago</span>`;
       }
+    }
 
-      const lf = flows['09380000']?.val;
-      const gc = flows['09402500']?.val;
-      const ci = flows['09163500']?.val;
-      const ca = flows['09095500']?.val;
+    if (flow30d.length) {
+      flowChart.data.labels = flow30d.map(v => v.d.slice(5));
+      flowChart.data.datasets[0].data = flow30d.map(v => v.v);
+      flowChart.update('none');
+    }
 
-      if (lf !== undefined) {
-        document.getElementById('val-leesferry').innerHTML = `${numFmt(lf)}<span class="card-unit">cfs</span>`;
-      }
-      if (gc !== undefined) document.getElementById('val-grandcanyon').innerHTML = `${numFmt(gc)}<span class="card-unit">cfs</span>`;
-      if (ci !== undefined) document.getElementById('val-cisco').innerHTML = `${numFmt(ci)}<span class="card-unit">cfs</span>`;
-      if (ca !== undefined) document.getElementById('val-cameo').innerHTML = `${numFmt(ca)}<span class="card-unit">cfs</span>`;
+    // Gauge rows
+    document.getElementById('gauge-rows').innerHTML = GAUGES.map(g => {
+      const f = flows[g.id];
+      if (!f || f.value == null) return '';
+      const pct = Math.min(100, (f.value / g.max) * 100);
+      const time = f.dateTime ? new Date(f.dateTime).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
+      return `<div class="gauge-row">
+        <div><div class="gauge-name">${g.name}</div><div class="gauge-loc">${g.loc}${time ? ' · ' + time : ''}</div></div>
+        <div class="gauge-bar-wrap"><div class="gauge-bar-bg"><div class="gauge-bar-fill bar-${g.color}" style="width:${pct}%"></div></div></div>
+        <div class="gauge-val">${numFmt(f.value)} <span class="gauge-unit">cfs</span></div>
+        <a class="gauge-link" href="https://waterdata.usgs.gov/monitoring-location/${g.id}/" target="_blank">↗ USGS</a>
+      </div>`;
+    }).join('');
+    anySuccess = true;
+  } catch(e) { console.warn('Streamflow render failed:', e.message); }
 
-      // Flow trend
-      if (dvData) {
-        const flowHistory = dvData.value.timeSeries[0]?.values[0]?.value ?? [];
-        if (lf !== undefined && flowHistory.length >= 8) {
-          const prev = parseFloat(flowHistory[flowHistory.length-8]?.value);
-          const diff = lf - prev;
-          const pct = ((diff/prev)*100).toFixed(1);
+  // 3. Snowpack from cached JSON
+  try {
+    const swe = data.snotel_cur;
+    const snowHistory = data.snotel_30d ?? [];
+
+    if (swe != null) {
+      document.getElementById('val-swe').innerHTML = `${swe}<span class="card-unit">in</span>`;
+      if (snowHistory.length >= 8) {
+        const prev = snowHistory[snowHistory.length - 8]?.v;
+        if (prev) {
+          const diff = swe - prev;
           const cls = diff > 0 ? 'trend-up' : 'trend-down';
-          document.getElementById('trend-leesferry').innerHTML = `<span class="${cls}">${diff>0?'↑':'↓'} ${Math.abs(pct)}% vs 7 days ago</span>`;
-        }
-        if (flowHistory.length) {
-          flowChart.data.labels = flowHistory.map(v => v.dateTime.slice(5,10));
-          flowChart.data.datasets[0].data = flowHistory.map(v => parseFloat(v.value));
-          flowChart.update('none');
+          document.getElementById('trend-swe').innerHTML = `<span class="${cls}">${diff>0?'▲':'▼'} ${Math.abs(diff).toFixed(1)} in vs 7d</span>`;
         }
       }
-
-      // Gauge rows
-      document.getElementById('gauge-rows').innerHTML = GAUGES.map(g => {
-        const f = flows[g.id];
-        if (!f) return '';
-        const pct = Math.min(100, (f.val / g.max) * 100);
-        const time = new Date(f.time).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-        return `<div class="gauge-row">
-          <div><div class="gauge-name">${g.name}</div><div class="gauge-loc">${g.loc} · ${time}</div></div>
-          <div class="gauge-bar-wrap"><div class="gauge-bar-bg"><div class="gauge-bar-fill bar-${g.color}" style="width:${pct}%"></div></div></div>
-          <div class="gauge-val">${numFmt(f.val)} <span class="gauge-unit">cfs</span></div>
-          <a class="gauge-link" href="https://waterdata.usgs.gov/monitoring-location/${g.id}/" target="_blank">↗ USGS</a>
-        </div>`;
-      }).join('');
-      anySuccess = true;
     }
-  } catch(e) { console.warn('Streamflow fetch failed:', e.message); }
-
-  // 3. Snowpack (NRCS SNOTEL — CORS-enabled, cached 10 min)
-  try {
-    const [{ data: snowCurText }, { data: snowHistText }] = await Promise.all([
-      cachedFetch('snotel_cur', 'https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/0,0/WTEQ::value?fitToScreen=false', false),
-      cachedFetch('snotel_hist', 'https://wcc.sc.egov.usda.gov/reportGenerator/view_csv/customSingleStationReport/daily/start_of_period/1040:CO:SNTL/-30,0/WTEQ::value?fitToScreen=false', false),
-    ]);
-
-    if (snowCurText) {
-      const snowCurrent = parseCSV(snowCurText);
-      const snowHistory = snowHistText ? parseCSV(snowHistText) : [];
-      const swe = snowCurrent[snowCurrent.length-1]?.val;
-
-      if (swe !== undefined) {
-        document.getElementById('val-swe').innerHTML = `${swe}<span class="card-unit">in</span>`;
-        if (snowHistory.length >= 8) {
-          const prev = snowHistory[snowHistory.length-8]?.val;
-          if (prev) {
-            const diff = swe - prev;
-            const cls = diff > 0 ? 'trend-up' : 'trend-down';
-            document.getElementById('trend-swe').innerHTML = `<span class="${cls}">${diff>0?'▲':'▼'} ${Math.abs(diff).toFixed(1)} in vs 7d</span>`;
-          }
-        }
-      }
-      if (snowHistory.length) {
-        snowChart.data.labels = snowHistory.map(r => r.date.slice(5));
-        snowChart.data.datasets[0].data = snowHistory.map(r => r.val);
-        snowChart.update('none');
-      }
-      anySuccess = true;
+    if (snowHistory.length) {
+      snowChart.data.labels = snowHistory.map(r => r.d.slice(5));
+      snowChart.data.datasets[0].data = snowHistory.map(r => r.v);
+      snowChart.update('none');
     }
-  } catch(e) { console.warn('Snowpack fetch failed:', e.message); }
+    anySuccess = true;
+  } catch(e) { console.warn('Snowpack render failed:', e.message); }
 
-  const fromCache = cacheGet('usgs_iv') !== null;
-  document.getElementById('last-update').textContent =
-    (fromCache ? '⚡ Cached · ' : '✓ Live · ') +
-    new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  // Footer timestamp — show data updated time from JSON
+  const updatedAt = data.updated ? new Date(data.updated).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+  document.getElementById('last-update').textContent = updatedAt ? `Data updated ${updatedAt}` : '';
+
   if (!anySuccess) {
     document.getElementById('status-banner').className = 'status-banner status-low';
-    document.getElementById('status-text').textContent = '⚠️ Data temporarily unavailable — retrying in 10 min';
+    document.getElementById('status-text').textContent = '⚠️ Data temporarily unavailable';
   }
 }
 
 loadData();
-setInterval(loadData, 600000);
 </script>
 </body>
 </html>
